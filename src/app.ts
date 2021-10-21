@@ -1,12 +1,12 @@
 // Supports ES6
 import { create, Whatsapp } from 'venom-bot';
 
+const { NlpManager } = require('node-nlp');
 
-const { dockStart } = require('@nlpjs/basic');
+const nlp = new NlpManager({ languages: ['en'], forceNER: true });
 
-(async () => { 
-  const dock = await dockStart({ use: ['Basic']});
-  const nlp = dock.get('nlp');
+
+
   nlp.addLanguage('en'); 
   // Adds the utterances and intents for the NLP
   nlp.addDocument('en', 'goodbye for now', 'greetings.bye');
@@ -17,33 +17,52 @@ const { dockStart } = require('@nlpjs/basic');
   nlp.addDocument('en', 'hello', 'greetings.hello');
   nlp.addDocument('en', 'hi', 'greetings.hello');
   nlp.addDocument('en', 'howdy', 'greetings.hello');
+  nlp.addDocument('en', 'ola', 'greetings.hello');
   
   // Train also the NLG
   nlp.addAnswer('en', 'greetings.bye', 'Till next time');
   nlp.addAnswer('en', 'greetings.bye', 'see you soon!');
   nlp.addAnswer('en', 'greetings.hello', 'Hey there!');
-  nlp.addAnswer('en', 'greetings.hello', 'Greetings!');  await nlp.train();
-  const response = await nlp.process('en', 'I should go now');
-  console.log(response);
+  nlp.addAnswer('en', 'greetings.hello', 'Greetings!'); 
+
+
+
+// Train and save the model.
+(async() => {
+  await nlp.train();
+  nlp.save();
+  
+
+
+
+  create('BOT')
+    .then((client) => {
+    client.onMessage(async(message) => {
+      if (message.isGroupMsg === false) {
+        const response = await nlp.process("en",message.body.toLocaleLowerCase());
+        console.log(response);
+        client.sendText(message.from,response.answer)
+        }
+      });
+    })
+    .catch((erro) => {
+                 console.error('Error when sending: ', erro); 
+                 
+    })  ;
+
+
 })();
-
-create('boot')
-  .then((client) => start(client))
-  .catch((erro) => {
-    console.log(erro);
-  });
-
-function start(client:Whatsapp) {
-  client.onMessage((message) => {
-    if (message.body === 'Hi' && message.isGroupMsg === false) {
-      client
-        .sendText(message.from, 'uhuuuu funcionou xuxu🕷')
-        .then((result) => {
-          console.log('Result: ', result); //return object success
-        })
-        .catch((erro) => {
-          console.error('Error when sending: ', erro); //return object error
-        });
-    }
-  });
-}
+// function start(client:Whatsapp) {
+//   client.onMessage((message) => {
+//     if (message.body === 'Hi' && message.isGroupMsg === false) {
+//       client
+//         .sendText(message.from, 'uhuuuu funcionou🕷')
+//         .then((result) => {
+//           console.log('Result: ', result); //return object success
+//         })
+//         .catch((erro) => {
+//           console.error('Error when sending: ', erro); //return object error
+//         });
+//     }
+//   });
+// }
